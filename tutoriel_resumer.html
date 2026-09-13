@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dans la tête d'un lecteur qui résume — Tutoriel</title>
+<style>
+  :root{
+    --parchment:#E9E1CB; --panel:#F4EFDE; --ink:#241F1B; --ink-soft:#4A4237;
+    --bronze:#8C6A3F; --bronze-dark:#6B4F2C; --sienna:#9C3B2E; --patina:#4B5A45;
+    --amber:#A9791F; --rule:#CDBF9C; --caption-bg:#241F1B; --caption-ink:#EFE7D2;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(ellipse at top left, rgba(140,106,63,0.10), transparent 55%),
+      radial-gradient(ellipse at bottom right, rgba(156,59,46,0.06), transparent 55%),
+      var(--parchment);
+    color:var(--ink); font-family: Arial, Helvetica, sans-serif; letter-spacing:0.01em;
+    min-height:100vh; display:flex; justify-content:center; padding:40px 20px 64px;
+  }
+  .wrap{ width:100%; max-width:780px; }
+  header.masthead{
+    margin-bottom:28px; border-bottom:1px solid var(--rule); padding-bottom:18px;
+  }
+  .eyebrow{ font-size:13px; letter-spacing:0.03em; color:var(--bronze-dark); margin:0 0 6px; }
+  h1{ font-size:clamp(24px,4vw,32px); line-height:1.25; margin:0 0 10px; font-weight:700; color:var(--ink); }
+  .subtitle{ font-size:16.5px; line-height:1.6; color:var(--ink-soft); margin:0; max-width:62ch; }
+
+  .track{ margin:24px 0 20px; }
+  .track .label{ font-size:14px; color:var(--ink-soft); margin-bottom:8px; display:block; }
+  .bar{ height:8px; border-radius:4px; background:var(--rule); overflow:hidden; }
+  .bar-fill{ height:100%; background:var(--bronze); width:0%; transition:width .3s ease; }
+
+  .passage{
+    background:var(--panel); border:1px solid var(--rule); border-radius:3px;
+    padding:20px 22px; font-size:17px; line-height:1.85; color:var(--ink);
+    max-height:420px; overflow-y:auto;
+  }
+  .passage .ref{ display:block; font-size:12.5px; color:var(--ink-soft); margin-bottom:10px; font-weight:700; }
+  .chunk{ padding:1px 2px; border-radius:2px; }
+  .chunk.garder{ background:rgba(75,90,69,0.14); border-bottom:2px solid var(--patina); }
+  .chunk.garder-court{ background:rgba(140,106,63,0.14); border-bottom:2px solid var(--bronze); }
+  .chunk.ecarter{ color:#8a8175; text-decoration:line-through; text-decoration-color:#b9ac95; }
+  .chunk.pending{ opacity:0.35; }
+
+  .thought{
+    margin-top:16px; background:var(--caption-bg); color:var(--caption-ink); border-radius:3px;
+    padding:18px 22px; min-height:60px;
+  }
+  .thought .kicker{ font-size:12.5px; font-weight:700; color:var(--bronze); margin-bottom:8px; }
+  .thought .txt{ font-size:16.5px; line-height:1.75; }
+  .decision-pill{
+    display:inline-block; font-size:12.5px; font-weight:700; padding:4px 10px; border-radius:3px;
+    margin-top:12px; color:#241F1B;
+  }
+  .decision-pill.garder{ background:#9fb495; }
+  .decision-pill.garder-court{ background:#d3b988; }
+  .decision-pill.ecarter{ background:#c9c1b2; }
+
+  .draft{
+    margin-top:16px; background:var(--panel); border:1px dashed var(--rule); border-radius:3px;
+    padding:16px 20px;
+  }
+  .draft .kicker{ font-size:12.5px; font-weight:700; color:var(--bronze-dark); margin-bottom:8px; }
+  .draft ul{ margin:0; padding-left:20px; }
+  .draft li{ font-size:15.5px; line-height:1.7; margin-bottom:4px; }
+  .draft .empty{ font-size:14.5px; color:var(--ink-soft); }
+
+  .controls{ display:flex; align-items:center; justify-content:space-between; margin-top:22px; gap:14px; }
+  .btn{
+    font-family:inherit; font-size:16px; font-weight:700; padding:12px 22px; border-radius:3px;
+    border:2px solid var(--bronze-dark); background:transparent; color:var(--bronze-dark);
+    cursor:pointer; transition:background .2s ease, color .2s ease;
+  }
+  .btn:hover:not(:disabled){ background:var(--bronze-dark); color:#F4EFDE; }
+  .btn:disabled{ opacity:0.35; cursor:default; }
+  .btn.primary{ background:var(--bronze-dark); color:#F4EFDE; border-color:var(--bronze-dark); }
+  .btn.primary:hover{ background:var(--ink); border-color:var(--ink); }
+  .hint{ font-size:13.5px; color:var(--ink-soft); text-align:center; margin-top:10px; }
+
+  .final-screen{ display:none; }
+  .final-title{ font-size:clamp(22px,4vw,28px); font-weight:700; margin:6px 0 14px; }
+  .final-card{
+    background:var(--panel); border:1px solid var(--rule); border-radius:3px;
+    padding:18px 20px; margin-bottom:16px; font-size:16.5px; line-height:1.8;
+  }
+  .final-card h3{ margin:0 0 8px; font-size:16px; color:var(--bronze-dark); }
+  .final-check{
+    background:var(--caption-bg); color:var(--caption-ink); border-radius:3px;
+    padding:18px 20px; font-size:16px; line-height:1.75;
+  }
+  .connector{ color:var(--sienna); font-weight:700; }
+
+  footer{ margin-top:34px; padding-top:16px; border-top:1px solid var(--rule); font-size:13px; line-height:1.6; color:var(--ink-soft); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="masthead">
+    <p class="eyebrow">Séance 2 — Des combats grandioses · Tutoriel</p>
+    <h1>Dans la tête d'un lecteur qui résume</h1>
+    <p class="subtitle">Homère, Iliade, chant XXII — regarde comment un lecteur trie, phrase après phrase, ce qu'il faut garder et ce qu'il peut laisser de côté.</p>
+  </header>
+
+  <div id="main-view">
+    <div class="track">
+      <span class="label" id="track-label">Phrase 1 / 10</span>
+      <div class="bar"><div class="bar-fill" id="bar-fill"></div></div>
+    </div>
+
+    <div class="passage">
+      <span class="ref">Iliade, chant XXII</span>
+      <span id="passage-text"></span>
+    </div>
+
+    <div class="thought">
+      <div class="kicker">Ce que pense le lecteur</div>
+      <div class="txt" id="thought-txt"></div>
+      <span class="decision-pill" id="decision-pill"></span>
+    </div>
+
+    <div class="draft">
+      <div class="kicker">Mon brouillon de résumé</div>
+      <ul id="draft-list"></ul>
+      <p class="empty" id="draft-empty">Rien à garder pour l'instant.</p>
+    </div>
+  </div>
+
+  <div id="final-screen" class="final-screen">
+    <h2 class="final-title">Le résumé terminé</h2>
+    <div class="final-card">
+      <h3>Résumé assemblé à partir du brouillon</h3>
+      <p id="final-summary"></p>
+    </div>
+    <div class="final-check">
+      <strong>Vérification :</strong>
+      <p id="final-check-txt" style="margin:8px 0 0;"></p>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button class="btn" id="prevBtn">‹ Avant</button>
+    <button class="btn primary" id="nextBtn">Suivant ›</button>
+  </div>
+  <p class="hint" id="hint"></p>
+
+  <footer>
+    Fiche à projeter en classe. Fondée sur la stratégie « Résumer » de l'enseignement réciproque (Palincsar &amp; Brown, 1984) : sélectionner les idées essentielles et les reformuler, en écartant les détails secondaires ou stylistiques.
+  </footer>
+
+</div>
+
+<script>
+const steps = [
+  {
+    text: "Le divin Achille s'approche, tel le farouche Arès au casque étincelant, en agitant sa terrible lance ; autour de son corps, le bronze brille d'un vif éclat, semblable à la flamme dévorante.",
+    decision: "ecarter",
+    thought: "Belle description, mais est-ce que ça change l'histoire ? Non : ça montre seulement qu'Achille est impressionnant et menaçant. Je peux laisser ce détail de côté."
+  },
+  {
+    text: " Hector, à cet aspect, est frappé de terreur ; il n'ose plus attendre son ennemi, il s'éloigne des portes de la ville et fuit épouvanté : le fils de Pélée se précipite, plein de confiance, en sa course légère.",
+    decision: "garder-court",
+    thought: "Ça, c'est important : Hector a peur et s'enfuit, Achille le poursuit. C'est le début de l'action.",
+    brouillon: "Hector prend peur et s'enfuit ; Achille le poursuit."
+  },
+  {
+    text: " Ainsi, sur les montagnes, l'épervier, le plus vite des oiseaux, fond d'une aile rapide sur la colombe tremblante ; elle s'échappe d'un vol oblique, mais le ravisseur s'approche en poussant des cris aigus, et redouble ses efforts, impatient de saisir sa proie : tel Achille s'élance avec impétuosité, et, sous les murs de Troie, Hector, effrayé, fuit.",
+    decision: "ecarter",
+    thought: "Encore une comparaison : Achille est comme un rapace qui chasse une colombe. Ça ne change rien à l'histoire — juste que la poursuite continue et qu'Achille est rapide et féroce. Je n'ai pas besoin de garder l'image, seulement l'idée : il poursuit avec acharnement."
+  },
+  {
+    text: " À ces mots, il brandit et jette sa longue lance ; Hector voit le trait, et l'évite en se détournant, car, prévoyant le coup, il s'était baissé ; l'airain vole au-dessus de sa tête et s'enfonce dans la terre.",
+    decision: "garder",
+    thought: "Action importante : Achille lance sa lance, mais Hector l'esquive. Je garde ça.",
+    brouillon: "Achille lance sa lance, mais Hector l'esquive."
+  },
+  {
+    text: " Athéna, la déesse aux yeux perçants, aussitôt prend cette arme, et la reporte au fils de Pélée sans être aperçue d'Hector.",
+    decision: "garder-court",
+    thought: "Ce détail change la suite : sans lui, Achille resterait sans arme. Je le garde, en une petite phrase.",
+    brouillon: "Athéna redonne discrètement la lance à Achille."
+  },
+  {
+    text: " Hector saisit le glaive aigu, éclatant et terrible, suspendu à son côté, et s'élance avec fureur, comme l'aigle, au vol superbe, se précipite dans la plaine pour saisir un faible agneau ou un lièvre timide : tel Hector s'élance en agitant le glaive aiguisé.",
+    decision: "garder-court",
+    thought: "Information utile au milieu du style : Hector sort son épée pour se défendre. La comparaison à l'aigle, elle, ne fait qu'illustrer sa fureur — je la laisse de côté.",
+    brouillon: "Hector dégaine son épée pour se défendre."
+  },
+  {
+    text: " Achille, à son tour, fond sur son ennemi, le cœur plein de rage. Tout son corps est caché par le riche et superbe bouclier ; mais Hector est couvert tout entier par cette riche armure d'airain dont il vola Patrocle après l'avoir tué.",
+    decision: "garder-court",
+    thought: "Le bouclier « riche et superbe » d'Achille, c'est du style — je l'écarte. Mais que Hector porte l'armure volée à Patrocle est important pour comprendre la rage d'Achille : je garde ce point-là.",
+    brouillon: "Hector porte l'armure qu'il a volée à Patrocle."
+  },
+  {
+    text: " Seulement on aperçoit une faible ouverture à cet endroit où, près de la gorge, l'os sépare le cou de l'épaule. C'est là qu'Achille furieux le frappe de sa lance ; la pointe traverse le cou délicat.",
+    decision: "garder",
+    thought: "Voici le moment clé de tout le texte : Achille repère le point faible de l'armure et frappe Hector au cou. C'est l'action principale — je la garde absolument.",
+    brouillon: "Achille repère un point faible de l'armure et frappe Hector au cou, le tuant."
+  },
+  {
+    text: " « Hector, après avoir tué Patrocle, tu croyais être sauvé : insensé ! moi, son vengeur, bien plus vaillant que lui, c'est moi qui ai brisé tes forces. Va, tandis que les chiens et les vautours dévoreront honteusement ton cadavre. »",
+    decision: "garder-court",
+    thought: "Ce discours explique pourquoi Achille est si violent : il venge Patrocle. Important pour comprendre ses motivations, mais je peux le résumer en une phrase courte.",
+    brouillon: "Achille explique qu'il venge la mort de Patrocle."
+  },
+  {
+    text: " Lorsqu'Achille a dépouillé son ennemi de ses armes, il s'avance au milieu des Grecs, et fait entendre ces paroles : « Amis, princes et chefs, enfin, nous avons acquis une gloire immortelle, nous avons immolé le divin Hector. »",
+    decision: "garder-court",
+    thought: "C'est la conclusion : Achille proclame sa victoire devant les Grecs. Je la garde, en une phrase courte.",
+    brouillon: "Achille proclame sa victoire devant les Grecs."
+  }
+];
+
+const finalSummaryHTML = "Hector prend peur <span class=\"connector\">et</span> s'enfuit ; Achille le poursuit avec acharnement. Achille lance sa lance, <span class=\"connector\">mais</span> Hector l'esquive — heureusement pour lui, <span class=\"connector\">car</span> Athéna redonne discrètement la lance à Achille. Hector dégaine son épée pour se défendre, portant l'armure qu'il a volée à Patrocle. Achille repère <span class=\"connector\">alors</span> un point faible de cette armure <span class=\"connector\">et</span> le frappe au cou, le tuant. Il explique <span class=\"connector\">ensuite</span> qu'il vengeait la mort de Patrocle, <span class=\"connector\">puis</span> proclame <span class=\"connector\">enfin</span> sa victoire devant les Grecs.";
+const finalCheck = "Est-ce que quelqu'un qui n'a pas lu le texte comprendrait l'essentiel de l'histoire avec ces phrases ? Oui. Est-ce que j'ai gardé des comparaisons ou des descriptions inutiles à l'action ? Non. C'est un bon résumé.";
+
+let idx = 0; // 0..steps.length-1 = étapes ; steps.length = écran final
+
+function esc(s){ const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+const decisionLabel = {
+  garder: "à garder",
+  "garder-court": "à garder, en une phrase courte",
+  ecarter: "à écarter"
+};
+
+function render(){
+  const isFinal = (idx >= steps.length);
+
+  document.getElementById('main-view').style.display = isFinal ? 'none' : '';
+  document.getElementById('final-screen').style.display = isFinal ? 'block' : 'none';
+
+  if(isFinal){
+    document.getElementById('final-summary').innerHTML = finalSummaryHTML;
+    document.getElementById('final-check-txt').textContent = finalCheck;
+  } else {
+    document.getElementById('track-label').textContent = `Phrase ${idx+1} / ${steps.length}`;
+    document.getElementById('bar-fill').style.width = Math.round(((idx+1)/steps.length)*100) + '%';
+
+    let html = '';
+    for(let k=0; k<steps.length; k++){
+      const s = steps[k];
+      if(k < idx){
+        html += `<span class="chunk ${s.decision}">${esc(s.text)}</span>`;
+      } else if(k === idx){
+        html += `<span class="chunk ${s.decision}">${esc(s.text)}</span>`;
+      } else {
+        html += `<span class="chunk pending">${esc(s.text)}</span>`;
+      }
+    }
+    document.getElementById('passage-text').innerHTML = html;
+
+    const cur = steps[idx];
+    document.getElementById('thought-txt').textContent = cur.thought;
+    const pill = document.getElementById('decision-pill');
+    pill.textContent = decisionLabel[cur.decision];
+    pill.className = 'decision-pill ' + cur.decision;
+
+    const draftList = document.getElementById('draft-list');
+    draftList.innerHTML = '';
+    let hasDraft = false;
+    for(let k=0; k<=idx; k++){
+      if(steps[k].brouillon){
+        hasDraft = true;
+        const li = document.createElement('li');
+        li.textContent = steps[k].brouillon;
+        draftList.appendChild(li);
+      }
+    }
+    document.getElementById('draft-empty').style.display = hasDraft ? 'none' : 'block';
+  }
+
+  document.getElementById('prevBtn').disabled = (idx === 0);
+  const nextBtn = document.getElementById('nextBtn');
+  const hint = document.getElementById('hint');
+  if(isFinal){
+    nextBtn.textContent = 'Revoir depuis le début';
+    hint.textContent = 'Tu as suivi tout le raisonnement du lecteur.';
+  } else if(idx === steps.length - 1){
+    nextBtn.textContent = 'Voir le résumé final ›';
+    hint.textContent = `Phrase ${idx+1} sur ${steps.length}`;
+  } else {
+    nextBtn.textContent = 'Suivant ›';
+    hint.textContent = `Phrase ${idx+1} sur ${steps.length}`;
+  }
+}
+
+document.getElementById('nextBtn').addEventListener('click', () => {
+  if(idx >= steps.length){ idx = 0; } else { idx++; }
+  render();
+});
+document.getElementById('prevBtn').addEventListener('click', () => {
+  if(idx > 0){ idx--; render(); }
+});
+document.addEventListener('keydown', (e) => {
+  if(e.key === 'ArrowRight') document.getElementById('nextBtn').click();
+  if(e.key === 'ArrowLeft') document.getElementById('prevBtn').click();
+});
+
+render();
+</script>
+</body>
+</html>

@@ -58,6 +58,7 @@
   .decision-pill.garder{ background:#9fb495; }
   .decision-pill.garder-court{ background:#d3b988; }
   .decision-pill.ecarter{ background:#c9c1b2; }
+  .decision-pill.mixed{ background:linear-gradient(90deg,#9fb495 50%,#c9c1b2 50%); }
 
   .draft{
     margin-top:16px; background:var(--panel); border:1px dashed var(--rule); border-radius:3px;
@@ -156,9 +157,12 @@
 <script>
 const steps = [
   {
-    text: "Le divin Achille s'approche, tel le farouche Arès au casque étincelant, en agitant sa terrible lance ; autour de son corps, le bronze brille d'un vif éclat, semblable à la flamme dévorante.",
-    decision: "ecarter",
-    thought: "Belle description, mais est-ce que ça change l'histoire ? Non : ça montre seulement qu'Achille est impressionnant et menaçant. Je peux laisser ce détail de côté."
+    parts: [
+      { text: "Le divin Achille s'approche,", decision: "garder-court" },
+      { text: " tel le farouche Arès au casque étincelant, en agitant sa terrible lance ; autour de son corps, le bronze brille d'un vif éclat, semblable à la flamme dévorante.", decision: "ecarter" }
+    ],
+    thought: "Le cœur de la phrase, c'est « Achille s'approche » : ça fait avancer l'histoire, je le garde. Le reste — la comparaison à Arès, la description du bronze qui brille — ne sert qu'à impressionner : j'écarte cette partie-là.",
+    brouillon: "Achille s'approche."
   },
   {
     text: " Hector, à cet aspect, est frappé de terreur ; il n'ose plus attendre son ennemi, il s'éloigne des portes de la ville et fuit épouvanté : le fils de Pélée se précipite, plein de confiance, en sa course légère.",
@@ -215,7 +219,7 @@ const steps = [
   }
 ];
 
-const finalSummaryHTML = "Hector prend peur <span class=\"connector\">et</span> s'enfuit ; Achille le poursuit avec acharnement. Achille lance sa lance, <span class=\"connector\">mais</span> Hector l'esquive — heureusement pour lui, <span class=\"connector\">car</span> Athéna redonne discrètement la lance à Achille. Hector dégaine son épée pour se défendre, portant l'armure qu'il a volée à Patrocle. Achille repère <span class=\"connector\">alors</span> un point faible de cette armure <span class=\"connector\">et</span> le frappe au cou, le tuant. Il explique <span class=\"connector\">ensuite</span> qu'il vengeait la mort de Patrocle, <span class=\"connector\">puis</span> proclame <span class=\"connector\">enfin</span> sa victoire devant les Grecs.";
+const finalSummaryHTML = "Achille s'approche. Hector prend peur <span class=\"connector\">et</span> s'enfuit ; Achille le poursuit avec acharnement. Achille lance sa lance, <span class=\"connector\">mais</span> Hector l'esquive — heureusement pour lui, <span class=\"connector\">car</span> Athéna redonne discrètement la lance à Achille. Hector dégaine son épée pour se défendre, portant l'armure qu'il a volée à Patrocle. Achille repère <span class=\"connector\">alors</span> un point faible de cette armure <span class=\"connector\">et</span> le frappe au cou, le tuant. Il explique <span class=\"connector\">ensuite</span> qu'il vengeait la mort de Patrocle, <span class=\"connector\">puis</span> proclame <span class=\"connector\">enfin</span> sa victoire devant les Grecs.";
 const finalCheck = "Est-ce que quelqu'un qui n'a pas lu le texte comprendrait l'essentiel de l'histoire avec ces phrases ? Oui. Est-ce que j'ai gardé des comparaisons ou des descriptions inutiles à l'action ? Non. C'est un bon résumé.";
 
 let idx = 0; // 0..steps.length-1 = étapes ; steps.length = écran final
@@ -225,7 +229,8 @@ function esc(s){ const d = document.createElement('div'); d.textContent = s; ret
 const decisionLabel = {
   garder: "à garder",
   "garder-court": "à garder, en une phrase courte",
-  ecarter: "à écarter"
+  ecarter: "à écarter",
+  mixed: "en partie à garder, en partie à écarter"
 };
 
 function render(){
@@ -244,12 +249,14 @@ function render(){
     let html = '';
     for(let k=0; k<steps.length; k++){
       const s = steps[k];
-      if(k < idx){
-        html += `<span class="chunk ${s.decision}">${esc(s.text)}</span>`;
-      } else if(k === idx){
-        html += `<span class="chunk ${s.decision}">${esc(s.text)}</span>`;
+      const partsHTML = s.parts
+        ? s.parts.map(p => `<span class="chunk ${p.decision}">${esc(p.text)}</span>`).join('')
+        : `<span class="chunk ${s.decision}">${esc(s.text)}</span>`;
+      if(k <= idx){
+        html += partsHTML;
       } else {
-        html += `<span class="chunk pending">${esc(s.text)}</span>`;
+        const plain = s.parts ? s.parts.map(p => p.text).join('') : s.text;
+        html += `<span class="chunk pending">${esc(plain)}</span>`;
       }
     }
     document.getElementById('passage-text').innerHTML = html;
@@ -257,8 +264,9 @@ function render(){
     const cur = steps[idx];
     document.getElementById('thought-txt').textContent = cur.thought;
     const pill = document.getElementById('decision-pill');
-    pill.textContent = decisionLabel[cur.decision];
-    pill.className = 'decision-pill ' + cur.decision;
+    const pillClass = cur.parts ? 'mixed' : cur.decision;
+    pill.textContent = decisionLabel[pillClass];
+    pill.className = 'decision-pill ' + pillClass;
 
     const draftList = document.getElementById('draft-list');
     draftList.innerHTML = '';

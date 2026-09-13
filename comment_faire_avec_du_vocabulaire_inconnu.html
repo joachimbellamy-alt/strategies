@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Face à un mot inconnu — Tutoriel, Iliade XXII</title>
+<style>
+  :root{
+    --parchment:#E9E1CB; --panel:#F4EFDE; --ink:#241F1B; --ink-soft:#4A4237;
+    --bronze:#8C6A3F; --bronze-dark:#6B4F2C; --sienna:#9C3B2E; --patina:#4B5A45;
+    --amber:#A9791F; --rule:#CDBF9C; --caption-bg:#241F1B; --caption-ink:#EFE7D2;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(ellipse at top left, rgba(140,106,63,0.10), transparent 55%),
+      radial-gradient(ellipse at bottom right, rgba(156,59,46,0.06), transparent 55%),
+      var(--parchment);
+    color:var(--ink); font-family: Arial, Helvetica, sans-serif; letter-spacing:0.01em;
+    min-height:100vh; display:flex; justify-content:center; padding:40px 20px 64px;
+  }
+  .wrap{ width:100%; max-width:780px; }
+  header.masthead{
+    display:flex; align-items:flex-start; justify-content:space-between; gap:16px;
+    margin-bottom:28px; border-bottom:1px solid var(--rule); padding-bottom:18px;
+  }
+  .eyebrow{ font-size:13px; letter-spacing:0.03em; color:var(--bronze-dark); margin:0 0 6px; }
+  h1{ font-size:clamp(26px,4vw,34px); line-height:1.25; margin:0 0 10px; font-weight:700; color:var(--ink); }
+  .subtitle{ font-size:17px; line-height:1.6; color:var(--ink-soft); margin:0; max-width:60ch; }
+
+  .track{ display:flex; align-items:center; gap:10px; margin:26px 0 22px; }
+  .track .label{ font-size:14px; color:var(--ink-soft); white-space:nowrap; }
+  .dots{ display:flex; gap:8px; flex:1; }
+  .dot{ flex:1; height:8px; border-radius:4px; background:var(--rule); position:relative; overflow:hidden; cursor:pointer; }
+  .dot.done{ background:var(--bronze); }
+  .dot.current{ background:var(--rule); }
+  .dot.current::after{ content:""; position:absolute; inset:0; background:var(--bronze); width:var(--fill,0%); }
+
+  .chapter-head{ display:flex; align-items:baseline; justify-content:space-between; gap:16px; margin-bottom:14px; }
+  .chapter-num{ font-size:14px; color:var(--bronze-dark); }
+  .word{ font-size:clamp(28px,5vw,38px); font-weight:700; margin:4px 0 0; }
+  .badge{
+    display:inline-block; font-size:13px; padding:5px 12px; border-radius:3px; color:#F4EFDE;
+    white-space:nowrap; align-self:flex-end; opacity:0; transform:translateY(4px);
+    transition:opacity .35s ease, transform .35s ease; font-weight:700;
+  }
+  .badge.show{ opacity:1; transform:translateY(0); }
+  .badge.fort{ background:var(--patina); }
+  .badge.faible{ background:var(--amber); }
+  .badge.trompeur{ background:var(--sienna); }
+
+  .passage{
+    background:var(--panel); border:1px solid var(--rule); border-radius:3px;
+    padding:22px 24px; font-size:18px; line-height:1.85; color:var(--ink);
+  }
+  .passage .ref{ display:block; font-size:13px; color:var(--ink-soft); margin-bottom:10px; font-weight:700; }
+  .passage mark{
+    background:transparent; color:var(--sienna); font-weight:700;
+    border-bottom:2px solid var(--sienna); padding:0 1px;
+  }
+  .caret{
+    display:inline-block; width:2px; height:1em; background:var(--bronze-dark);
+    margin-left:2px; vertical-align:-0.15em; animation:blink 1s step-start infinite;
+  }
+  @keyframes blink{ 50%{ opacity:0; } }
+  @media (prefers-reduced-motion: reduce){ .caret{ animation:none; opacity:0.6; } }
+
+  .captions{ margin-top:16px; background:var(--caption-bg); color:var(--caption-ink); border-radius:3px; padding:6px 24px; min-height:64px; }
+  .cap-line{
+    display:grid; grid-template-columns:150px 1fr; gap:14px; padding:16px 0;
+    border-bottom:1px solid rgba(239,231,210,0.12); opacity:0; transform:translateY(6px);
+    transition:opacity .4s ease, transform .4s ease;
+  }
+  .cap-line:last-child{ border-bottom:none; }
+  .cap-line.show{ opacity:1; transform:translateY(0); }
+  .cap-line .tag{ font-size:13px; font-weight:700; letter-spacing:0.02em; color:var(--bronze); padding-top:2px; }
+  .cap-line .txt{ font-size:17px; line-height:1.75; }
+  .cap-empty{ padding:22px 0; font-size:15px; color:rgba(239,231,210,0.6); }
+  .strategy-announce{
+    display:inline-block; font-size:14px; font-weight:700; color:var(--caption-bg);
+    background:var(--bronze); border-radius:3px; padding:6px 12px; margin-bottom:12px;
+  }
+  .cap-empty-text{ font-size:15px; color:rgba(239,231,210,0.75); }
+
+  .controls{ display:flex; align-items:center; justify-content:space-between; margin-top:22px; gap:14px; }
+  .btn{
+    font-family:inherit; font-size:16px; font-weight:700; padding:12px 22px; border-radius:3px;
+    border:2px solid var(--bronze-dark); background:transparent; color:var(--bronze-dark);
+    cursor:pointer; transition:background .2s ease, color .2s ease;
+  }
+  .btn:hover:not(:disabled){ background:var(--bronze-dark); color:#F4EFDE; }
+  .btn:disabled{ opacity:0.35; cursor:default; }
+  .btn.primary{ background:var(--bronze-dark); color:#F4EFDE; border-color:var(--bronze-dark); }
+  .btn.primary:hover{ background:var(--ink); border-color:var(--ink); }
+  .hint{ font-size:13.5px; color:var(--ink-soft); text-align:center; }
+
+  footer{ margin-top:34px; padding-top:16px; border-top:1px solid var(--rule); font-size:13.5px; line-height:1.6; color:var(--ink-soft); }
+
+  .final-screen{ display:none; }
+  .final-title{ font-size:clamp(24px,4vw,30px); font-weight:700; margin:6px 0 14px; }
+  .final-intro{ font-size:17px; line-height:1.7; color:var(--ink-soft); margin:0 0 20px; }
+  .final-card{
+    background:var(--panel); border:1px solid var(--rule); border-radius:3px;
+    padding:18px 20px; margin-bottom:16px;
+  }
+  .final-card h3{ margin:0 0 8px; font-size:18px; color:var(--bronze-dark); }
+  .final-card p{ margin:0; font-size:16px; line-height:1.75; }
+  .final-choice{
+    background:var(--caption-bg); color:var(--caption-ink); border-radius:3px;
+    padding:20px 22px; margin-top:8px;
+  }
+  .final-choice h3{ margin:0 0 10px; font-size:16px; color:var(--bronze); }
+  .final-choice p{ margin:0 0 14px; font-size:16px; line-height:1.7; }
+  .final-choice ul{ margin:0; padding-left:0; list-style:none; }
+  .final-choice li{ font-size:16px; line-height:1.9; }
+
+  @media (max-width:520px){ .cap-line{ grid-template-columns:1fr; gap:4px; } .cap-line .tag{ padding-top:0; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="masthead">
+    <div>
+      <p class="eyebrow">Séance 2 — Des combats grandioses · Tutoriel</p>
+      <h1 id="pageTitle">Face à un mot inconnu</h1>
+      <p class="subtitle" id="pageSubtitle">Homère, Iliade, chant XXII — le texte se dévoile au fur et à mesure, comme quand on lit vraiment.</p>
+    </div>
+  </header>
+
+  <div id="reading-view">
+    <div class="track">
+      <span class="label" id="track-label">Mot 1 / 5</span>
+      <div class="dots" id="dots"></div>
+    </div>
+
+    <div id="chapter-content">
+      <div class="chapter-head">
+        <div>
+          <div class="chapter-num" id="chapter-num">Mot 1</div>
+          <div class="word" id="word"></div>
+        </div>
+        <span class="badge" id="badge"></span>
+      </div>
+
+      <div class="passage">
+        <span class="ref" id="passage-ref"></span>
+        <span id="passage-text"></span>
+      </div>
+
+      <div class="captions" id="captions"></div>
+    </div>
+
+    <div id="final-screen" class="final-screen">
+      <h2 class="final-title" id="finalTitle"></h2>
+      <p class="final-intro" id="finalIntro"></p>
+      <div class="final-card">
+        <h3 id="finalCard1Title"></h3>
+        <p id="finalCard1Text"></p>
+      </div>
+      <div class="final-card">
+        <h3 id="finalCard2Title"></h3>
+        <p id="finalCard2Text"></p>
+      </div>
+      <div class="final-choice">
+        <h3 id="finalChoiceTitle"></h3>
+        <p id="finalChoiceQuestion"></p>
+        <ul>
+          <li id="finalYes"></li>
+          <li id="finalNo"></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button class="btn" id="prevBtn">‹ Avant</button>
+      <button class="btn primary" id="nextBtn">Suivant ›</button>
+    </div>
+    <p class="hint" id="hint">Clique sur « Suivant » pour lire la suite, phrase par phrase.</p>
+  </div>
+
+  <footer id="pageFooter">
+    Fiche à projeter en classe. Fondée sur le modelage explicite (Cèbe &amp; Goigoux, 2009) et le repérage du type d'indice contextuel (Beck, McKeown &amp; McCaslin, 1983).
+  </footer>
+
+</div>
+
+<script id="main-script">
+const chapters = [
+  {
+    word: "épervier",
+    ref: "Iliade, chant XXII",
+    beforeText: "Ainsi, sur les montagnes, l'",
+    badge: "fort",
+    globalStrategy: "Chercher les indices dans le contexte",
+    steps: [
+      {reveal:"", tag:"Je m'arrête", txt:"Je ne connais pas ce mot. Pour l'instant, je sais juste qu'on est en montagne. Il faut lire la suite pour en savoir plus."},
+      {reveal:", le plus vite des oiseaux, fond d'une aile rapide sur la colombe tremblante", tag:"Indice", txt:"C'est un oiseau (« le plus vite des oiseaux »). Il « fond » sur une colombe : il lui tombe dessus très vite, pour l'attaquer."},
+      {reveal:" ; elle s'échappe d'un vol oblique, mais le ravisseur s'approche en poussant des cris aigus, et redouble ses efforts, impatient de saisir sa proie.", tag:"Vérification", txt:"Le mot « ravisseur » reprend la même idée : celui qui attaque. Ça confirme l'hypothèse jusqu'à la fin de la phrase."},
+      {reveal:"", tag:"Sens retenu", txt:"Un petit oiseau de proie très rapide."}
+    ]
+  },
+  {
+    word: "impétuosité",
+    ref: "Iliade, chant XXII",
+    beforeText: "tel Achille s'élance avec ",
+    badge: "fort",
+    globalStrategy: "Chercher les indices avant et après le mot",
+    steps: [
+      {reveal:"", tag:"Je m'arrête", txt:"Je ne connais pas ce mot. Mais juste avant, il y a « s'élance » qui désigne un mouvement rapide."},
+      {reveal:"", tag:"Hypothèse", txt:"Une très grande énergie, un mouvement brutal."},
+      {reveal:", et, sous les murs de Troie, Hector, effrayé, fuit.", tag:"Vérification", txt:"La suite montre un guerrier qui se précipite si fort que l'autre s'enfuit. Un mouvement violent et rapide semble bien correspondre à cette scène."},
+      {reveal:"", tag:"Sens retenu", txt:"Une énergie puissante."}
+    ]
+  },
+  {
+    word: "airain",
+    ref: "Iliade, chant XXII",
+    beforeText: "Il brandit et jette sa longue lance… l'",
+    badge: "faible",
+    globalStrategy: "Rapprocher les indices trouvés à plusieurs endroits du texte",
+    steps: [
+      {reveal:"", tag:"Je m'arrête", txt:"Je ne connais pas ce mot. Juste avant, on parle d'une lance qu'on jette. « Airain » est peut-être lié à cette arme."},
+      {reveal:" vole au-dessus de sa tête et s'enfonce dans la terre.", tag:"Indice", txt:"« Vole » et « s'enfonce dans la terre » : ça parle d'un objet qu'on a lancé, sans doute la lance. Toujours pas de nom précis pour le métal."},
+      {reveal:" Plus loin dans le texte : « Hector est couvert tout entier par cette riche armure d'airain ».", tag:"Nouvel indice", txt:"Le mot revient, cette fois pour une armure. C'est donc un métal utilisé pour les armes et pour les armures — mais le texte ne dit toujours pas lequel."},
+      {reveal:"", tag:"Sens retenu", txt:"C'est un mot ancien et poétique pour dire « bronze ». Le texte seul ne suffisait pas : il fallait qu'on nous donne la réponse directement."}
+    ]
+  },
+  {
+    word: "glaive",
+    ref: "Iliade, chant XXII",
+    beforeText: "Hector saisit le ",
+    badge: "fort",
+    globalStrategy: "Repérer les indices juste autour du mot",
+    steps: [
+      {reveal:"", tag:"Je m'arrête", txt:"Je ne connais pas ce mot. Juste avant, Hector le « saisit » : c'est donc un objet qu'on attrape avec la main."},
+      {reveal:" aigu, éclatant et terrible, suspendu à son côté,", tag:"Indice", txt:"Trois mots le décrivent : aigu, éclatant, terrible. Et il est « suspendu à son côté » : porté à la ceinture."},
+      {reveal:" et s'élance avec fureur, comme l'aigle, au vol superbe, se précipite dans la plaine pour saisir un faible agneau.", tag:"Vérification", txt:"Juste après, « il s'élance avec fureur » : il attaque tout de suite avec. Ça correspond à une arme qu'on utilise de très près."},
+      {reveal:"", tag:"Sens retenu", txt:"Une épée. Plusieurs indices allaient dans le même sens, donc on peut être presque sûr."}
+    ]
+  },
+  {
+    word: "insensé",
+    ref: "Iliade, chant XXII",
+    beforeText: "« Hector, après avoir tué Patrocle, tu croyais être sauvé : ",
+    badge: "fort",
+    globalStrategy: "Décomposer le mot : préfixe, radical, suffixe",
+    steps: [
+      {reveal:"", tag:"Je m'arrête", txt:"Je ne connais pas ce mot. Mais je reconnais des morceaux à l'intérieur : « in- », comme dans « incapable » ; le radical « sens », bien connu ; et « -é », comme dans « fatigué »."},
+      {reveal:"", tag:"Hypothèse", txt:"« in- » indique souvent le contraire. « Insensé » pourrait vouloir dire : qui n'a pas de bon sens, qui se trompe."},
+      {reveal:" ! moi, son vengeur, bien plus vaillant que lui, c'est moi qui ai brisé tes forces.", tag:"Vérification", txt:"La suite confirme : Achille reproche à Hector de s'être trompé en croyant pouvoir être sauvé. Ça correspond bien à quelqu'un qui manque de bon sens dans cette situation."},
+      {reveal:"", tag:"Sens retenu", txt:"Qui n'a pas de bon sens, qui commet une erreur de jugement. Ici, c'est la formation du mot — in- + sens + é — qui donne presque directement la réponse."}
+    ]
+  }
+];
+
+const ui = {
+  subtitle: "Homère, Iliade, chant XXII — le texte se dévoile au fur et à mesure, comme quand on lit vraiment.",
+  emptyPrompt: "Ta lecture s'arrête sur ce mot que tu ne connais pas. Clique sur « Suivant » pour savoir quelle stratégie employer.",
+  btnPrev: "‹ Avant",
+  btnNext: "Suivant ›",
+  btnNextWord: "Mot suivant ›",
+  btnFinal: "Pour finir ›",
+  btnRestart: "Revoir depuis le début",
+  footer: "Fiche à projeter en classe. Fondée sur le modelage explicite (Cèbe & Goigoux, 2009) et le repérage du type d'indice contextuel (Beck, McKeown & McCaslin, 1983).",
+  finalTitle: "Et si je ne trouve toujours pas ?",
+  finalIntro: "Toutes les stratégies ne suffisent pas toujours. Il reste deux choix possibles :",
+  finalCard1Title: "1. Chercher le mot",
+  finalCard1Text: "Dans un dictionnaire, ou en demandant à quelqu'un. Utile quand le mot est important pour comprendre la suite du texte.",
+  finalCard2Title: "2. Laisser le mot de côté",
+  finalCard2Text: "Si le mot ne bloque pas la compréhension du reste de la phrase ou du texte, on peut continuer sa lecture sans s'arrêter dessus.",
+  finalChoiceTitle: "Comment choisir ?",
+  finalChoiceQuestion: "Demande-toi : est-ce que je comprends quand même ce qui se passe dans le texte, sans connaître ce mot ?",
+  finalYes: "Oui → je continue ma lecture.",
+  finalNo: "Non → je cherche le mot avant de continuer."
+};
+
+let ci = 0, si = 0;
+
+function esc(s){
+  const d = document.createElement('div'); d.textContent = s; return d.innerHTML;
+}
+
+function renderFinalTexts(){
+  document.getElementById('finalTitle').textContent = ui.finalTitle;
+  document.getElementById('finalIntro').textContent = ui.finalIntro;
+  document.getElementById('finalCard1Title').textContent = ui.finalCard1Title;
+  document.getElementById('finalCard1Text').textContent = ui.finalCard1Text;
+  document.getElementById('finalCard2Title').textContent = ui.finalCard2Title;
+  document.getElementById('finalCard2Text').textContent = ui.finalCard2Text;
+  document.getElementById('finalChoiceTitle').textContent = ui.finalChoiceTitle;
+  document.getElementById('finalChoiceQuestion').textContent = ui.finalChoiceQuestion;
+  document.getElementById('finalYes').textContent = ui.finalYes;
+  document.getElementById('finalNo').textContent = ui.finalNo;
+}
+
+/* ---------- READING VIEW ---------- */
+const dotsEl = document.getElementById('dots');
+function buildDots(){
+  dotsEl.innerHTML = '';
+  chapters.forEach((_, i) => {
+    const d = document.createElement('div');
+    d.className = 'dot';
+    d.addEventListener('click', () => { ci = i; si = 0; renderRead(); });
+    dotsEl.appendChild(d);
+  });
+  const finalDot = document.createElement('div');
+  finalDot.className = 'dot';
+  finalDot.addEventListener('click', () => { ci = chapters.length; si = 0; renderRead(); });
+  dotsEl.appendChild(finalDot);
+}
+buildDots();
+
+function renderRead(){
+  const isFinal = (ci >= chapters.length);
+  const ch = isFinal ? null : chapters[ci];
+  document.getElementById('pageSubtitle').textContent = ui.subtitle;
+
+  document.getElementById('chapter-content').style.display = isFinal ? 'none' : '';
+  document.getElementById('final-screen').style.display = isFinal ? 'block' : 'none';
+  renderFinalTexts();
+
+  document.getElementById('track-label').textContent = isFinal ? 'Pour finir' : `Mot ${ci+1} / ${chapters.length}`;
+
+  if(!isFinal){
+    document.getElementById('chapter-num').textContent = `Mot ${ci+1}`;
+    document.getElementById('word').textContent = ch.word;
+    document.getElementById('passage-ref').textContent = ch.ref;
+
+    let html = esc(ch.beforeText) + '<mark>' + esc(ch.word) + '</mark>';
+    for(let k=0; k<si; k++){ html += esc(ch.steps[k].reveal); }
+    if(si < ch.steps.length){ html += '<span class="caret"></span>'; }
+    document.getElementById('passage-text').innerHTML = html;
+
+    const badge = document.getElementById('badge');
+    const labelMap = {fort:"indice fort", faible:"indice faible", trompeur:"indice trompeur"};
+    badge.textContent = labelMap[ch.badge] || ch.badge;
+    badge.className = 'badge ' + ch.badge + (si >= ch.steps.length ? ' show' : '');
+
+    const capsEl = document.getElementById('captions');
+    capsEl.innerHTML = '';
+    if(si === 0){
+      const wrap = document.createElement('div');
+      wrap.className = 'cap-empty';
+      const pill = document.createElement('div');
+      pill.className = 'strategy-announce';
+      pill.textContent = 'Stratégie : ' + ch.globalStrategy;
+      wrap.appendChild(pill);
+      const p = document.createElement('div');
+      p.className = 'cap-empty-text';
+      p.textContent = ui.emptyPrompt;
+      wrap.appendChild(p);
+      capsEl.appendChild(wrap);
+    } else {
+      for(let k=0; k<si; k++){
+        const c = ch.steps[k];
+        const row = document.createElement('div');
+        row.className = 'cap-line';
+        row.innerHTML = `<div class="tag">${esc(c.tag)}</div><div class="txt">${esc(c.txt)}</div>`;
+        capsEl.appendChild(row);
+        const raf = window.requestAnimationFrame || function(cb){ setTimeout(cb, 16); };
+        raf(() => raf(() => row.classList.add('show')));
+      }
+    }
+  }
+
+  document.querySelectorAll('.dot').forEach((d, i) => {
+    if(i < chapters.length){
+      const stepsLen = chapters[i].steps.length;
+      d.classList.toggle('done', isFinal || i < ci);
+      d.classList.toggle('current', !isFinal && i === ci);
+      if(!isFinal && i === ci){ d.style.setProperty('--fill', Math.round((si/stepsLen)*100) + '%'); }
+      else { d.style.setProperty('--fill', (isFinal || i < ci) ? '100%' : '0%'); }
+    } else {
+      d.classList.toggle('done', false);
+      d.classList.toggle('current', isFinal);
+      d.style.setProperty('--fill', isFinal ? '100%' : '0%');
+    }
+  });
+
+  document.getElementById('prevBtn').textContent = ui.btnPrev;
+  document.getElementById('prevBtn').disabled = (!isFinal && ci === 0 && si === 0);
+  const nextBtn = document.getElementById('nextBtn');
+  const hint = document.getElementById('hint');
+  if(isFinal){
+    nextBtn.textContent = ui.btnRestart;
+    hint.textContent = 'Tu as vu les 5 mots.';
+  } else if(si < ch.steps.length){
+    nextBtn.textContent = ui.btnNext;
+    hint.textContent = `Étape ${si+1} sur ${ch.steps.length}`;
+  } else if(ci < chapters.length - 1){
+    nextBtn.textContent = ui.btnNextWord;
+    hint.textContent = 'Toutes les étapes de ce mot ont été vues.';
+  } else {
+    nextBtn.textContent = ui.btnFinal;
+    hint.textContent = 'Toutes les étapes de ce mot ont été vues.';
+  }
+
+  document.getElementById('pageFooter').textContent = ui.footer;
+}
+
+document.getElementById('nextBtn').addEventListener('click', () => {
+  if(ci >= chapters.length){ ci = 0; si = 0; renderRead(); return; }
+  const ch = chapters[ci];
+  if(si < ch.steps.length){ si++; }
+  else if(ci < chapters.length - 1){ ci++; si = 0; }
+  else { ci = chapters.length; si = 0; }
+  renderRead();
+});
+document.getElementById('prevBtn').addEventListener('click', () => {
+  if(ci >= chapters.length){ ci = chapters.length - 1; si = chapters[ci].steps.length; renderRead(); return; }
+  if(si > 0){ si--; }
+  else if(ci > 0){ ci--; si = chapters[ci].steps.length; }
+  renderRead();
+});
+document.addEventListener('keydown', (e) => {
+  if(e.key === 'ArrowRight') document.getElementById('nextBtn').click();
+  if(e.key === 'ArrowLeft') document.getElementById('prevBtn').click();
+});
+
+renderRead();
+</script>
+</body>
+</html>
